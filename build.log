@@ -1,0 +1,65 @@
+nohup: ignoring input
+
+> coreaura-license-system@0.1.0 build
+> next build
+
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   ▲ Next.js 16.0.3 (Turbopack)
+   - Environments: .env.local
+
+   Creating an optimized production build ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+ ✓ Compiled successfully in 91s
+   Running TypeScript ...
+   Collecting page data using 1 worker ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   Generating static pages using 1 worker (0/30) ...
+[baseline-browser-mapping] The data in this module is over two months old.  To ensure accurate Baseline data, please update: `npm i baseline-browser-mapping@latest -D`
+   Generating static pages using 1 worker (7/30) 
+   Generating static pages using 1 worker (14/30) 
+   Generating static pages using 1 worker (22/30) 
+ ✓ Generating static pages using 1 worker (30/30) in 2.3s
+   Finalizing page optimization ...
+
+Route (app)
+┌ ○ /
+├ ○ /_not-found
+├ ƒ /api/auth/[...nextauth]
+├ ƒ /api/dashboard/stats
+├ ƒ /api/licenses
+├ ƒ /api/licenses/[id]
+├ ƒ /api/payments/mercadopago/create-preference
+├ ƒ /api/payments/mercadopago/webhook
+├ ƒ /api/payments/paypal/capture-order
+├ ƒ /api/payments/paypal/create-order
+├ ƒ /api/plans
+├ ƒ /api/plans/[id]
+├ ƒ /api/products
+├ ƒ /api/products/[id]
+├ ƒ /api/public/activate
+├ ƒ /api/public/deactivate
+├ ƒ /api/public/validate
+├ ƒ /api/settings
+├ ƒ /api/transactions
+├ ƒ /api/users
+├ ƒ /api/users/[id]
+├ ○ /checkout/cancel
+├ ○ /checkout/success
+├ ○ /dashboard
+├ ○ /dashboard/help
+├ ○ /dashboard/licenses
+├ ○ /dashboard/plans
+├ ○ /dashboard/products
+├ ○ /dashboard/settings
+├ ○ /dashboard/test-validation
+├ ○ /dashboard/transactions
+├ ○ /dashboard/users
+└ ○ /login
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
