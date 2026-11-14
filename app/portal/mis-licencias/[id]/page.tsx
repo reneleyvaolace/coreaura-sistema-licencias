@@ -119,7 +119,7 @@ export default function DetalleLicenciaPage() {
         <div className="mt-6 rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
           <p className="font-semibold text-gray-900">Inicia sesión para ver tu licencia</p>
           <a
-            href="/login"
+            href="/login?callbackUrl=/portal/mis-licencias"
             className="mt-4 inline-block rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white"
           >
             Ir a iniciar sesión
