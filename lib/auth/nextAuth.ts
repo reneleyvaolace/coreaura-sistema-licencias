@@ -6,6 +6,7 @@ import CredentialsProvider from "next-auth/providers/credentials";
 import { FirestoreAdapter } from "@next-auth/firebase-adapter";
 import { signInWithEmailAndPassword, getAuth } from "firebase/auth";
 import { firebaseApp } from "@/lib/firebase/config"; // Ajusta la ruta si es necesario
+import { adminDB } from "@/lib/firebase/admin";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -53,9 +54,7 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  adapter: FirestoreAdapter({
-    projectId: process.env.FIREBASE_ADMIN_PROJECT_ID,
-  }),
+  adapter: FirestoreAdapter(adminDB),
   secret: process.env.AUTH_SECRET,
   session: { strategy: "jwt" as const },
   pages: {
