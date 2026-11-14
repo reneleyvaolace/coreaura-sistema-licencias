@@ -69,7 +69,22 @@ export const authOptions: NextAuthOptions = {
     },
     async jwt({ token, user }: { token: any; user: any }) {
       if (user) {
-        token.role = user.role || "customer";
+        // El rol vive en la ficha del usuario en Firestore (colección "users").
+        // Si no hay ficha, el usuario es cliente.
+        let role = "customer";
+        try {
+          const snap = await adminDB
+            .collection("users")
+            .where("email", "==", user.email)
+            .limit(1)
+            .get();
+          if (!snap.empty) {
+            role = snap.docs[0].data().role || "customer";
+          }
+        } catch (e) {
+          console.error("Error al leer el rol del usuario:", e);
+        }
+        token.role = role;
       }
       return token;
     },

@@ -15,6 +15,16 @@ interface License {
   planName?: string | null;
   duration?: string | null;
   fechaExpiracion?: string | null;
+  tipo?: string | null;
+  clienteId?: string | null;
+  licenciaEmpresaId?: string | null;
+  maxUsers?: number | null;
+}
+
+interface Cliente {
+  id: string;
+  empresa?: string;
+  email?: string;
 }
 
 interface Plan {
@@ -50,6 +60,7 @@ function vencimientoPreview(duration: string): string | null {
 export default function LicensesPage() {
   const [licencias, setLicencias] = useState<License[]>([]);
   const [planes, setPlanes] = useState<Plan[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -60,11 +71,15 @@ export default function LicensesPage() {
     usuario: "",
     estado: "activa",
     planId: "",
+    tipo: "usuario",
+    clienteId: "",
+    licenciaEmpresaId: "",
   });
 
   useEffect(() => {
     fetchLicenses();
     fetchPlanes();
+    fetchClientes();
   }, []);
 
   const fetchLicenses = async () => {
@@ -98,9 +113,21 @@ export default function LicensesPage() {
     }
   };
 
+  const fetchClientes = async () => {
+    try {
+      const response = await fetch("/api/clients");
+      const data = await response.json();
+      if (response.ok) {
+        setClientes(data.clients ?? []);
+      }
+    } catch (error) {
+      console.error("Error al cargar clientes:", error);
+    }
+  };
+
   const openCreateModal = () => {
     setEditingLicense(null);
-    setNewLicense({ producto: "", usuario: "", estado: "activa", planId: "" });
+    setNewLicense({ producto: "", usuario: "", estado: "activa", planId: "", tipo: "usuario", clienteId: "", licenciaEmpresaId: "" });
     setShowModal(true);
   };
 
@@ -111,6 +138,9 @@ export default function LicensesPage() {
       usuario: license.usuario,
       estado: license.estado,
       planId: license.planId ?? "",
+      tipo: license.tipo ?? "usuario",
+      clienteId: license.clienteId ?? "",
+      licenciaEmpresaId: license.licenciaEmpresaId ?? "",
     });
     setShowModal(true);
   };
@@ -128,13 +158,18 @@ export default function LicensesPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newLicense),
+        body: JSON.stringify({
+          ...newLicense,
+          clienteId: newLicense.clienteId || null,
+          licenciaEmpresaId:
+            newLicense.tipo === "empresa" ? null : newLicense.licenciaEmpresaId || null,
+        }),
       });
 
       if (response.ok) {
         setMensaje({ tipo: "exito", texto: editingLicense ? "Licencia actualizada exitosamente" : "Licencia creada exitosamente" });
         setShowModal(false);
-        setNewLicense({ producto: "", usuario: "", estado: "activa", planId: "" });
+        setNewLicense({ producto: "", usuario: "", estado: "activa", planId: "", tipo: "usuario", clienteId: "", licenciaEmpresaId: "" });
         fetchLicenses();
       } else {
         setMensaje({ tipo: "error", texto: "Error al guardar licencia" });
@@ -191,6 +226,7 @@ export default function LicensesPage() {
           <thead className="bg-gray-800 text-white">
             <tr>
               <th className="py-3 px-4 text-left">Clave de Licencia</th>
+              <th className="py-3 px-4 text-left">Tipo</th>
               <th className="py-3 px-4 text-left">Producto</th>
               <th className="py-3 px-4 text-left">Usuario</th>
               <th className="py-3 px-4 text-left">Plan</th>
@@ -204,6 +240,19 @@ export default function LicensesPage() {
             {licencias.map((lic) => (
               <tr key={lic.id} className="border-t border-gray-200 hover:bg-gray-50">
                 <td className="py-3 px-4 font-mono text-sm">{lic.licenseKey}</td>
+                <td className="py-3 px-4">
+                  <span
+                    className={`px-2 py-1 rounded text-sm font-semibold ${
+                      lic.tipo === "empresa"
+                        ? "bg-purple-100 text-purple-800"
+                        : "bg-blue-100 text-blue-800"
+                    }`}
+                  >
+                    {lic.tipo === "empresa"
+                      ? `Empresa (${lic.maxUsers ?? 1} usuarios)`
+                      : "Usuario"}
+                  </span>
+                </td>
                 <td className="py-3 px-4">{lic.producto}</td>
                 <td className="py-3 px-4">{lic.usuario}</td>
                 <td className="py-3 px-4">
@@ -297,7 +346,69 @@ export default function LicensesPage() {
               </div>
               <div className="mb-4">
                 <label className="block text-gray-700 font-semibold mb-2">
-                  Usuario (Email)
+                  Tipo de licencia
+                </label>
+                <select
+                  value={newLicense.tipo}
+                  onChange={(e) =>
+                    setNewLicense({ ...newLicense, tipo: e.target.value, licenciaEmpresaId: "" })
+                  }
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
+                >
+                  <option value="usuario">De usuario</option>
+                  <option value="empresa">De empresa (con usuarios incluidos)</option>
+                </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Empresa (cliente)
+                </label>
+                <select
+                  value={newLicense.clienteId}
+                  onChange={(e) =>
+                    setNewLicense({ ...newLicense, clienteId: e.target.value })
+                  }
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
+                >
+                  <option value="">Sin empresa</option>
+                  {clientes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.empresa || c.email || c.id}
+                    </option>
+                  ))}
+                </select>
+                {clientes.length === 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    No hay fichas de cliente. Créelas en el módulo Clientes para ligar la licencia a una empresa.
+                  </p>
+                )}
+              </div>
+              {newLicense.tipo === "usuario" && (
+                <div className="mb-4">
+                  <label className="block text-gray-700 font-semibold mb-2">
+                    Licencia de empresa (opcional)
+                  </label>
+                  <select
+                    value={newLicense.licenciaEmpresaId}
+                    onChange={(e) =>
+                      setNewLicense({ ...newLicense, licenciaEmpresaId: e.target.value })
+                    }
+                    className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
+                  >
+                    <option value="">Sin licencia de empresa</option>
+                    {licencias
+                      .filter((l) => l.tipo === "empresa")
+                      .map((l) => (
+                        <option key={l.id} value={l.id}>
+                          {l.producto} — {l.licenseKey} ({l.maxUsers ?? 1} usuarios)
+                        </option>
+                      ))}
+                  </select>
+                </div>
+              )}
+              <div className="mb-4">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  {newLicense.tipo === "empresa" ? "Cliente principal (Email)" : "Usuario (Email)"}
                 </label>
                 <input
                   type="email"
@@ -339,9 +450,13 @@ export default function LicensesPage() {
                       const plan = planes.find((p) => p.id === newLicense.planId);
                       if (!plan) return "";
                       const vence = vencimientoPreview(plan.duration);
-                      return vence
+                      const usuarios = (plan as Plan & { maxUsers?: number }).maxUsers ?? 1;
+                      const venceTxt = vence
                         ? `Vence el: ${vence}`
                         : "Sin vencimiento (de por vida)";
+                      return newLicense.tipo === "empresa"
+                        ? `${venceTxt} · Incluye ${usuarios} ${usuarios === 1 ? "usuario" : "usuarios"}`
+                        : venceTxt;
                     })()}
                   </p>
                 )}

@@ -10,6 +10,7 @@ interface Plan {
   duration: string;
   features?: string[];
   active: boolean;
+  maxUsers?: number;
   createdAt: string;
 }
 
@@ -26,6 +27,7 @@ export default function PlansPage() {
     duration: "monthly",
     features: "",
     active: true,
+    maxUsers: "1",
   });
 
   useEffect(() => {
@@ -53,7 +55,7 @@ export default function PlansPage() {
 
   const openCreateModal = () => {
     setEditingPlan(null);
-    setFormData({ name: "", price: "", duration: "monthly", features: "", active: true });
+    setFormData({ name: "", price: "", duration: "monthly", features: "", active: true, maxUsers: "1" });
     setShowModal(true);
   };
 
@@ -65,6 +67,7 @@ export default function PlansPage() {
       duration: planToEdit.duration,
       features: planToEdit.features ? planToEdit.features.join("\n") : "",
       active: planToEdit.active,
+      maxUsers: String(planToEdit.maxUsers ?? 1),
     });
     setShowModal(true);
   };
@@ -93,6 +96,7 @@ export default function PlansPage() {
           duration: formData.duration,
           features: featuresArray,
           active: formData.active,
+          maxUsers: parseInt(formData.maxUsers, 10) || 1,
         }),
       });
 
@@ -199,6 +203,11 @@ export default function PlansPage() {
                   ${typeof planItem.price === 'number' ? planItem.price.toFixed(2) : '0.00'}
                 </p>
                 <p className="text-sm text-gray-600">{getDurationLabel(planItem.duration)}</p>
+                <p className="text-sm text-gray-600">
+                  {(planItem.maxUsers ?? 1) === 1
+                    ? "1 usuario incluido"
+                    : `${planItem.maxUsers ?? 1} usuarios incluidos`}
+                </p>
               </div>
 
               <div className="mb-4">
@@ -292,6 +301,25 @@ export default function PlansPage() {
                   className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
                   placeholder="9.99"
                 />
+              </div>
+
+              <div className="mb-4">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Usuarios incluidos (licencias de usuario)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  step={1}
+                  required
+                  value={formData.maxUsers}
+                  onChange={(e) => setFormData({ ...formData, maxUsers: e.target.value })}
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
+                  placeholder="1"
+                />
+                <p className="mt-1 text-xs text-gray-500">
+                  Cuántas licencias de usuario incluye este plan para la empresa.
+                </p>
               </div>
 
               <div className="mb-4">

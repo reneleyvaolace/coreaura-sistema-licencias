@@ -30,7 +30,22 @@ export async function GET(
 
     // No revelar si la licencia existe cuando no es del usuario.
     if (license.usuario !== token.email) {
-      return NextResponse.json({ error: "Licencia no encontrada" }, { status: 404 });
+      // El administrador de la empresa puede ver las licencias de su empresa.
+      const fichaSnap = await adminDB
+        .collection("users")
+        .where("email", "==", token.email)
+        .limit(1)
+        .get();
+      const ficha = fichaSnap.empty
+        ? null
+        : (fichaSnap.docs[0].data() as { role?: string; clientId?: string });
+      const esEmpresaAdmin =
+        ficha?.role === "company_admin" &&
+        !!ficha.clientId &&
+        license.clienteId === ficha.clientId;
+      if (!esEmpresaAdmin) {
+        return NextResponse.json({ error: "Licencia no encontrada" }, { status: 404 });
+      }
     }
 
     // Plan contratado (si la licencia tiene planId)

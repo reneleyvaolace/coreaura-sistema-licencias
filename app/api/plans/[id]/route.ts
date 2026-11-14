@@ -22,6 +22,10 @@ export async function PUT(
       body.price = parseFloat(body.price);
     }
 
+    if (body.maxUsers !== undefined && body.maxUsers !== null && body.maxUsers !== "") {
+      body.maxUsers = Math.max(1, parseInt(body.maxUsers, 10) || 1);
+    }
+
     body.updatedAt = new Date().toISOString();
 
     await adminDB.collection("plans").doc(id).update(body);

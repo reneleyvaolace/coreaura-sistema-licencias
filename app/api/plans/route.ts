@@ -36,6 +36,7 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const { name, price, duration, features = [], active = true } = body;
+    const maxUsers = Math.max(1, parseInt(body.maxUsers, 10) || 1);
 
     if (!name || !price || !duration) {
       return NextResponse.json(
@@ -50,6 +51,7 @@ export async function POST(request: NextRequest) {
       duration, // "monthly", "yearly", "lifetime"
       features,
       active,
+      maxUsers, // Licencias de usuario incluidas en el plan
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

@@ -35,7 +35,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { email, name, role = "customer", active = true } = body;
+    const { email, name, role = "customer", active = true, clientId = null } = body;
 
     if (!email || !name) {
       return NextResponse.json(
@@ -49,6 +49,7 @@ export async function POST(request: NextRequest) {
       name,
       role,
       active,
+      clientId, // Empresa a la que pertenece el usuario (ficha de clientes)
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

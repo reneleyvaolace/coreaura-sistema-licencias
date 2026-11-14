@@ -15,6 +15,18 @@ export default function PortalLayout({ children }: { children: React.ReactNode }
             CoreAura · Portal de cliente
           </Link>
           <div className="flex items-center gap-4">
+            <Link
+              href="/portal/mis-licencias"
+              className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+            >
+              Mis licencias
+            </Link>
+            <Link
+              href="/portal/mi-empresa"
+              className="text-sm font-semibold text-gray-600 hover:text-gray-900"
+            >
+              Mi empresa
+            </Link>
             {session?.user?.email && (
               <span className="text-sm text-gray-500">{session.user.email}</span>
             )}

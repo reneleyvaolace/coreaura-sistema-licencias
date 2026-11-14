@@ -38,13 +38,42 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { producto, usuario, estado = "activa", planId = "" } = body;
+    const {
+      producto,
+      usuario,
+      estado = "activa",
+      planId = "",
+      tipo = "usuario", // "usuario" | "empresa"
+      clienteId = null,
+      licenciaEmpresaId = null,
+    } = body;
 
     if (!producto || !usuario) {
       return NextResponse.json(
         { error: "Producto y usuario son requeridos" },
         { status: 400 }
       );
+    }
+
+    if (tipo !== "usuario" && tipo !== "empresa") {
+      return NextResponse.json(
+        { error: "El tipo debe ser usuario o empresa" },
+        { status: 400 }
+      );
+    }
+
+    // Si se liga a una licencia de empresa, debe existir.
+    if (licenciaEmpresaId) {
+      const empresaDoc = await adminDB
+        .collection("licenses")
+        .doc(licenciaEmpresaId)
+        .get();
+      if (!empresaDoc.exists) {
+        return NextResponse.json(
+          { error: "La licencia de empresa no existe" },
+          { status: 400 }
+        );
+      }
     }
 
     // Generar ID de licencia único
@@ -63,11 +92,21 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Las licencias de empresa incluyen N licencias de usuario (del plan).
+    const maxUsers =
+      tipo === "empresa"
+        ? Math.max(1, parseInt(body.maxUsers, 10) || planData?.maxUsers || 1)
+        : null;
+
     const newLicense = {
       licenseKey,
       producto,
       usuario,
       estado,
+      tipo,
+      clienteId,
+      licenciaEmpresaId,
+      maxUsers,
       planId: planData ? planData.planId : null,
       planName: planData ? planData.planName : null,
       duration: planData ? planData.duration : null,

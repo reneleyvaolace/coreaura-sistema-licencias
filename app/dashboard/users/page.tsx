@@ -10,12 +10,32 @@ interface User {
   name: string;
   role: string;
   active: boolean;
+  clientId?: string | null;
   createdAt: string;
   updatedAt?: string;
 }
 
+interface Cliente {
+  id: string;
+  empresa?: string;
+  email?: string;
+}
+
+// Perfiles de usuario (como en CoreAura OS): admin es de CoreAura;
+// company_admin, user (operador), auditor (finanzas) y viewer (consulta)
+// son perfiles dentro de una empresa cliente.
+function rolLabel(role: string): string {
+  if (role === "admin") return "Administrador CoreAura";
+  if (role === "company_admin") return "Administrador de empresa";
+  if (role === "user") return "Operador";
+  if (role === "auditor") return "Finanzas";
+  if (role === "viewer") return "Consulta";
+  return "Cliente";
+}
+
 export default function UsersPage() {
   const [usuarios, setUsuarios] = useState<User[]>([]);
+  const [clientes, setClientes] = useState<Cliente[]>([]);
   const [loading, setLoading] = useState(true);
   const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
@@ -26,10 +46,12 @@ export default function UsersPage() {
     name: "",
     role: "customer",
     active: true,
+    clientId: "",
   });
 
   useEffect(() => {
     fetchUsers();
+    fetchClientes();
   }, []);
 
   const fetchUsers = async () => {
@@ -51,9 +73,27 @@ export default function UsersPage() {
     }
   };
 
+  const fetchClientes = async () => {
+    try {
+      const response = await fetch("/api/clients");
+      const data = await response.json();
+      if (response.ok) {
+        setClientes(data.clients ?? []);
+      }
+    } catch (error) {
+      console.error("Error al cargar clientes:", error);
+    }
+  };
+
+  const nombreEmpresa = (clientId?: string | null) => {
+    if (!clientId) return "—";
+    const c = clientes.find((x) => x.id === clientId);
+    return c ? c.empresa || c.email || c.id : "—";
+  };
+
   const openCreateModal = () => {
     setEditingUser(null);
-    setFormData({ email: "", name: "", role: "customer", active: true });
+    setFormData({ email: "", name: "", role: "customer", active: true, clientId: "" });
     setShowModal(true);
   };
 
@@ -64,6 +104,7 @@ export default function UsersPage() {
       name: user.name,
       role: user.role,
       active: user.active,
+      clientId: user.clientId ?? "",
     });
     setShowModal(true);
   };
@@ -81,7 +122,7 @@ export default function UsersPage() {
       const response = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, clientId: formData.clientId || null }),
       });
 
       if (response.ok) {
@@ -164,6 +205,7 @@ export default function UsersPage() {
               <th className="py-3 px-4 text-left">Email</th>
               <th className="py-3 px-4 text-left">Nombre</th>
               <th className="py-3 px-4 text-left">Rol</th>
+              <th className="py-3 px-4 text-left">Empresa</th>
               <th className="py-3 px-4 text-left">Estado</th>
               <th className="py-3 px-4 text-left">Fecha Creación</th>
               <th className="py-3 px-4 text-left">Acciones</th>
@@ -179,12 +221,15 @@ export default function UsersPage() {
                     className={`px-2 py-1 rounded text-sm font-semibold ${
                       user.role === "admin"
                         ? "bg-purple-100 text-purple-800"
+                        : user.role === "company_admin"
+                        ? "bg-indigo-100 text-indigo-800"
                         : "bg-blue-100 text-blue-800"
                     }`}
                   >
-                    {user.role === "admin" ? "Administrador" : "Cliente"}
+                    {rolLabel(user.role)}
                   </span>
                 </td>
+                <td className="py-3 px-4">{nombreEmpresa(user.clientId)}</td>
                 <td className="py-3 px-4">
                   <button
                     onClick={() => toggleActive(user)}
@@ -289,8 +334,34 @@ export default function UsersPage() {
                   className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
                 >
                   <option value="customer">Cliente</option>
-                  <option value="admin">Administrador</option>
+                  <option value="company_admin">Administrador de empresa</option>
+                  <option value="user">Operador</option>
+                  <option value="auditor">Finanzas</option>
+                  <option value="viewer">Consulta</option>
+                  <option value="admin">Administrador CoreAura</option>
                 </select>
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 font-semibold mb-2">
+                  Empresa (cliente)
+                </label>
+                <select
+                  value={formData.clientId}
+                  onChange={(e) =>
+                    setFormData({ ...formData, clientId: e.target.value })
+                  }
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
+                >
+                  <option value="">Sin empresa</option>
+                  {clientes.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.empresa || c.email || c.id}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-1 text-xs text-gray-500">
+                  La empresa a la que pertenece el usuario. Los perfiles de empresa (administrador, operador, finanzas, consulta) necesitan una empresa.
+                </p>
               </div>
               <div className="mb-4 flex items-center">
                 <input

@@ -28,13 +28,18 @@ export async function datosPlanParaLicencia(planId: string, desde: Date) {
   const planDoc = await adminDB.collection("plans").doc(planId).get();
   if (!planDoc.exists) return null;
 
-  const plan = planDoc.data() as { name?: string; duration?: string };
+  const plan = planDoc.data() as {
+    name?: string;
+    duration?: string;
+    maxUsers?: number;
+  };
   const duration = plan.duration ?? "monthly";
 
   return {
     planId,
     planName: plan.name ?? "",
     duration,
+    maxUsers: Math.max(1, parseInt(String(plan.maxUsers ?? 1), 10) || 1),
     fechaExpiracion: calcularVencimiento(duration, desde),
   };
 }
