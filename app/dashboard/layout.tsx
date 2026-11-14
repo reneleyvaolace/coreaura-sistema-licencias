@@ -14,6 +14,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         <h2 className="text-xl font-bold mb-8">CoreAura Admin</h2>
         <ul className="flex flex-col gap-4">
           <li><Link href="/dashboard">Inicio</Link></li>
+          <li><Link href="/dashboard/monitoreo">Monitoreo</Link></li>
           <li><Link href="/dashboard/licenses">Licencias</Link></li>
           <li><Link href="/dashboard/products">Productos</Link></li>
           <li><Link href="/dashboard/plans">Planes</Link></li>
