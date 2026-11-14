@@ -20,6 +20,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <li><Link href="/dashboard/plans">Planes</Link></li>
           <li><Link href="/dashboard/transactions">Transacciones</Link></li>
           <li><Link href="/dashboard/users">Usuarios</Link></li>
+          <li><Link href="/dashboard/clientes">Clientes</Link></li>
           <li><Link href="/dashboard/settings">Configuración</Link></li>
           <li><Link href="/dashboard/test-validation">Probar API</Link></li>
           <li><Link href="/dashboard/help">Ayuda</Link></li>
