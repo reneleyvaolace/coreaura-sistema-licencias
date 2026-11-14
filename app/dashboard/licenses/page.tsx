@@ -10,10 +10,45 @@ interface License {
   usuario: string;
   estado: string;
   fechaCreacion: string;
+  planId?: string | null;
+  planName?: string | null;
+  duration?: string | null;
+  fechaExpiracion?: string | null;
+}
+
+interface Plan {
+  id: string;
+  name: string;
+  price: number;
+  duration: string;
+  active: boolean;
+}
+
+function duracionLabel(duration: string): string {
+  if (duration === "yearly") return "Anual";
+  if (duration === "lifetime") return "De por vida";
+  return "Mensual";
+}
+
+// Vista previa del vencimiento en el formulario: +1 mes, +1 año, o sin vencimiento.
+function vencimientoPreview(duration: string): string | null {
+  if (duration === "lifetime") return null;
+  const fecha = new Date();
+  if (duration === "yearly") {
+    fecha.setFullYear(fecha.getFullYear() + 1);
+    return fecha.toLocaleDateString("es-MX");
+  }
+  const dia = fecha.getDate();
+  fecha.setDate(1);
+  fecha.setMonth(fecha.getMonth() + 1);
+  const diasDelMes = new Date(fecha.getFullYear(), fecha.getMonth() + 1, 0).getDate();
+  fecha.setDate(Math.min(dia, diasDelMes));
+  return fecha.toLocaleDateString("es-MX");
 }
 
 export default function LicensesPage() {
   const [licencias, setLicencias] = useState<License[]>([]);
+  const [planes, setPlanes] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
@@ -21,10 +56,12 @@ export default function LicensesPage() {
     producto: "",
     usuario: "",
     estado: "activa",
+    planId: "",
   });
 
   useEffect(() => {
     fetchLicenses();
+    fetchPlanes();
   }, []);
 
   const fetchLicenses = async () => {
@@ -46,9 +83,21 @@ export default function LicensesPage() {
     }
   };
 
+  const fetchPlanes = async () => {
+    try {
+      const response = await fetch("/api/plans");
+      const data = await response.json();
+      if (response.ok) {
+        setPlanes(data.plans ?? []);
+      }
+    } catch (error) {
+      console.error("Error al cargar planes:", error);
+    }
+  };
+
   const openCreateModal = () => {
     setEditingLicense(null);
-    setNewLicense({ producto: "", usuario: "", estado: "activa" });
+    setNewLicense({ producto: "", usuario: "", estado: "activa", planId: "" });
     setShowModal(true);
   };
 
@@ -58,6 +107,7 @@ export default function LicensesPage() {
       producto: license.producto,
       usuario: license.usuario,
       estado: license.estado,
+      planId: license.planId ?? "",
     });
     setShowModal(true);
   };
@@ -81,7 +131,7 @@ export default function LicensesPage() {
       if (response.ok) {
         alert(editingLicense ? "Licencia actualizada exitosamente" : "Licencia creada exitosamente");
         setShowModal(false);
-        setNewLicense({ producto: "", usuario: "", estado: "activa" });
+        setNewLicense({ producto: "", usuario: "", estado: "activa", planId: "" });
         fetchLicenses();
       } else {
         alert("Error al guardar licencia");
@@ -139,8 +189,10 @@ export default function LicensesPage() {
               <th className="py-3 px-4 text-left">Clave de Licencia</th>
               <th className="py-3 px-4 text-left">Producto</th>
               <th className="py-3 px-4 text-left">Usuario</th>
+              <th className="py-3 px-4 text-left">Plan</th>
               <th className="py-3 px-4 text-left">Estado</th>
               <th className="py-3 px-4 text-left">Fecha Creación</th>
+              <th className="py-3 px-4 text-left">Vencimiento</th>
               <th className="py-3 px-4 text-left">Acciones</th>
             </tr>
           </thead>
@@ -150,6 +202,11 @@ export default function LicensesPage() {
                 <td className="py-3 px-4 font-mono text-sm">{lic.licenseKey}</td>
                 <td className="py-3 px-4">{lic.producto}</td>
                 <td className="py-3 px-4">{lic.usuario}</td>
+                <td className="py-3 px-4">
+                  {lic.planName
+                    ? `${lic.planName} (${duracionLabel(lic.duration ?? "monthly")})`
+                    : "Sin plan"}
+                </td>
                 <td className="py-3 px-4">
                   <span
                     className={`px-2 py-1 rounded text-sm font-semibold ${
@@ -167,6 +224,11 @@ export default function LicensesPage() {
                 </td>
                 <td className="py-3 px-4">
                   {new Date(lic.fechaCreacion).toLocaleDateString()}
+                </td>
+                <td className="py-3 px-4">
+                  {lic.fechaExpiracion
+                    ? new Date(lic.fechaExpiracion).toLocaleDateString()
+                    : "Sin vencimiento"}
                 </td>
                 <td className="py-3 px-4">
                   <button
@@ -227,6 +289,42 @@ export default function LicensesPage() {
               </div>
               <div className="mb-4">
                 <label className="block text-gray-700 font-semibold mb-2">
+                  Plan
+                </label>
+                <select
+                  value={newLicense.planId}
+                  onChange={(e) =>
+                    setNewLicense({ ...newLicense, planId: e.target.value })
+                  }
+                  className="w-full border border-gray-300 rounded px-3 py-2 text-gray-800"
+                >
+                  <option value="">Sin plan</option>
+                  {planes.map((plan) => (
+                    <option key={plan.id} value={plan.id}>
+                      {plan.name} - {duracionLabel(plan.duration)} (${plan.price})
+                    </option>
+                  ))}
+                </select>
+                {planes.length === 0 && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    No hay planes creados. Créelos en el módulo Planes para elegir uno.
+                  </p>
+                )}
+                {newLicense.planId && (
+                  <p className="mt-1 text-xs text-gray-500">
+                    {(() => {
+                      const plan = planes.find((p) => p.id === newLicense.planId);
+                      if (!plan) return "";
+                      const vence = vencimientoPreview(plan.duration);
+                      return vence
+                        ? `Vence el: ${vence}`
+                        : "Sin vencimiento (de por vida)";
+                    })()}
+                  </p>
+                )}
+              </div>
+              <div className="mb-4">
+                <label className="block text-gray-700 font-semibold mb-2">
                   Estado
                 </label>
                 <select
@@ -264,3 +362,4 @@ export default function LicensesPage() {
     </section>
   );
 }
+

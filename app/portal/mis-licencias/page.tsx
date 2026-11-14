@@ -10,6 +10,7 @@ type License = {
   usuario?: string;
   estado?: string;
   status?: string;
+  planName?: string | null;
   fechaCreacion?: string;
   fechaExpiracion?: string | null;
 };
@@ -126,6 +127,12 @@ export default function MisLicenciasPage() {
                   </span>
                 </div>
                 <dl className="mt-3 space-y-1 text-sm text-gray-600">
+                  {lic.planName && (
+                    <div className="flex justify-between">
+                      <dt>Plan</dt>
+                      <dd>{lic.planName}</dd>
+                    </div>
+                  )}
                   <div className="flex justify-between gap-2">
                     <dt>Clave</dt>
                     <dd className="break-all font-mono text-xs">

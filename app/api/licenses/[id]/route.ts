@@ -2,8 +2,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDB } from "@/lib/firebase/admin";
 import { getToken } from "next-auth/jwt";
+import { datosPlanParaLicencia } from "@/lib/licenses/vencimiento";
 
 // PUT: Actualizar licencia
+// Si el plan cambia, el vencimiento se recalcula desde la duración del plan nuevo.
+// Si el plan no cambia, el vencimiento se queda como está.
 export async function PUT(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -18,7 +21,39 @@ export async function PUT(
     const { id } = await params;
     const body = await request.json();
 
-    await adminDB.collection("licenses").doc(id).update(body);
+    const updateData: Record<string, unknown> = { ...body };
+
+    if ("planId" in body) {
+      const currentDoc = await adminDB.collection("licenses").doc(id).get();
+      const currentPlanId = currentDoc.exists
+        ? ((currentDoc.data() as { planId?: string | null }).planId ?? null)
+        : null;
+
+      if (body.planId !== currentPlanId) {
+        if (body.planId) {
+          const planData = await datosPlanParaLicencia(body.planId, new Date());
+          if (!planData) {
+            return NextResponse.json(
+              { error: "El plan no existe" },
+              { status: 400 }
+            );
+          }
+          Object.assign(updateData, planData);
+        } else {
+          updateData.planId = null;
+          updateData.planName = null;
+          updateData.duration = null;
+          updateData.fechaExpiracion = null;
+        }
+      } else {
+        // El plan no cambió: no tocar los datos del plan ni el vencimiento.
+        delete updateData.planName;
+        delete updateData.duration;
+        delete updateData.fechaExpiracion;
+      }
+    }
+
+    await adminDB.collection("licenses").doc(id).update(updateData);
 
     return NextResponse.json({ message: "Licencia actualizada" }, { status: 200 });
   } catch (error) {

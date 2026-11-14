@@ -2,6 +2,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { adminDB } from "@/lib/firebase/admin";
 import { getToken } from "next-auth/jwt";
+import { datosPlanParaLicencia } from "@/lib/licenses/vencimiento";
 
 // GET: Listar todas las licencias
 export async function GET(request: NextRequest) {
@@ -26,6 +27,8 @@ export async function GET(request: NextRequest) {
 }
 
 // POST: Crear nueva licencia
+// Si se envía planId, el vencimiento se calcula solo desde la duración del plan
+// (mensual: +1 mes, anual: +1 año, de por vida: sin vencimiento).
 export async function POST(request: NextRequest) {
   try {
     const token = await getToken({ req: request, secret: process.env.AUTH_SECRET });
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { producto, usuario, estado = "activa" } = body;
+    const { producto, usuario, estado = "activa", planId = "" } = body;
 
     if (!producto || !usuario) {
       return NextResponse.json(
@@ -47,13 +50,29 @@ export async function POST(request: NextRequest) {
     // Generar ID de licencia único
     const licenseKey = `LIC-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
 
+    const fechaCreacion = new Date();
+
+    let planData = null;
+    if (planId) {
+      planData = await datosPlanParaLicencia(planId, fechaCreacion);
+      if (!planData) {
+        return NextResponse.json(
+          { error: "El plan no existe" },
+          { status: 400 }
+        );
+      }
+    }
+
     const newLicense = {
       licenseKey,
       producto,
       usuario,
       estado,
-      fechaCreacion: new Date().toISOString(),
-      fechaExpiracion: null,
+      planId: planData ? planData.planId : null,
+      planName: planData ? planData.planName : null,
+      duration: planData ? planData.duration : null,
+      fechaCreacion: fechaCreacion.toISOString(),
+      fechaExpiracion: planData ? planData.fechaExpiracion : null,
     };
 
     const docRef = await adminDB.collection("licenses").add(newLicense);
