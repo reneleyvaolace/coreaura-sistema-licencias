@@ -10,6 +10,10 @@ export const dynamic = "force-dynamic";
 
 const PERFILES_EMPRESA = ["company_admin", "user", "auditor", "viewer"];
 
+// Fila de Firestore con su id. Sin esta anotación, TypeScript infiere solo
+// { id: string } del spread y luego se queja al leer otros campos.
+type DocData = Record<string, unknown> & { id: string };
+
 async function getEmpresaAdmin(request: NextRequest) {
   const token = await getToken({ req: request, secret: process.env.AUTH_SECRET });
   if (!token || !token.email) {
@@ -30,7 +34,7 @@ async function getEmpresaAdmin(request: NextRequest) {
   return { clientId: ficha.clientId as string };
 }
 
-async function getUsuarioDeEmpresa(clientId: string, id: string) {
+async function getUsuarioDeEmpresa(clientId: string, id: string): Promise<DocData | null> {
   const doc = await adminDB.collection("users").doc(id).get();
   if (!doc.exists) return null;
   const data = doc.data() as Record<string, unknown>;

@@ -13,7 +13,11 @@ export const dynamic = "force-dynamic";
 
 const PERFILES_EMPRESA = ["company_admin", "user", "auditor", "viewer"];
 
-async function getFichaUsuario(email: string) {
+// Fila de Firestore con su id. Sin esta anotación, TypeScript infiere solo
+// { id: string } del spread y luego se queja al leer otros campos.
+type DocData = Record<string, unknown> & { id: string };
+
+async function getFichaUsuario(email: string): Promise<DocData | null> {
   const snap = await adminDB
     .collection("users")
     .where("email", "==", email)
@@ -35,13 +39,13 @@ async function getResumen(clientId: string) {
     ? { id: empresaSnap.id, ...empresaSnap.data() }
     : null;
 
-  const todas = licenciasSnap.docs.map((d) => ({
+  const todas: DocData[] = licenciasSnap.docs.map((d) => ({
     id: d.id,
     ...(d.data() as Record<string, unknown>),
   }));
   const licenciasEmpresa = todas.filter((l) => l.tipo === "empresa");
   const licenciasUsuario = todas.filter((l) => l.tipo !== "empresa");
-  const usuarios = usuariosSnap.docs.map((d) => ({
+  const usuarios: DocData[] = usuariosSnap.docs.map((d) => ({
     id: d.id,
     ...(d.data() as Record<string, unknown>),
   }));
