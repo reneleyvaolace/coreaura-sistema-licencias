@@ -20,11 +20,26 @@ export interface TotalPagado {
   total: number;
 }
 
+export interface FichaCliente {
+  id: string;
+  email: string;
+  empresa: string;
+  razonSocial: string | null;
+  rfc: string | null;
+  regimenFiscal: string | null;
+  codigoPostal: string | null;
+  contacto: string | null;
+  telefono: string | null;
+  notas: string | null;
+}
+
 export interface ClienteResumen {
   email: string;
   nombre: string | null;
   rol: string | null;
   activo: boolean | null;
+  ficha: FichaCliente | null;
+  rfc: string | null;
   licencias: LicenciaCliente[];
   licenciasActivas: number;
   planes: string[];
@@ -49,10 +64,11 @@ function fechaValida(v: unknown): string | null {
 }
 
 export async function listarClientes(db: Firestore): Promise<ClienteResumen[]> {
-  const [usersSnap, licensesSnap, txSnap] = await Promise.all([
+  const [usersSnap, licensesSnap, txSnap, fichasSnap] = await Promise.all([
     db.collection("users").get(),
     db.collection("licenses").get(),
     db.collection("transactions").get(),
+    db.collection("clients").get(),
   ]);
 
   const porEmail = new Map<string, ClienteResumen>();
@@ -65,6 +81,8 @@ export async function listarClientes(db: Firestore): Promise<ClienteResumen[]> {
         nombre: null,
         rol: null,
         activo: null,
+        ficha: null,
+        rfc: null,
         licencias: [],
         licenciasActivas: 0,
         planes: [],
@@ -83,11 +101,36 @@ export async function listarClientes(db: Firestore): Promise<ClienteResumen[]> {
     }
   };
 
+  // La ficha de empresa manda sobre el nombre de usuario: es el nombre
+  // comercial del cliente.
+  for (const doc of fichasSnap.docs) {
+    const d = doc.data();
+    if (typeof d.email !== "string" || !d.email) continue;
+    const c = obtener(d.email);
+    const texto = (v: unknown): string | null =>
+      typeof v === "string" && v ? v : null;
+    c.ficha = {
+      id: doc.id,
+      email: d.email,
+      empresa: typeof d.empresa === "string" ? d.empresa : "",
+      razonSocial: texto(d.razonSocial),
+      rfc: texto(d.rfc),
+      regimenFiscal: texto(d.regimenFiscal),
+      codigoPostal: texto(d.codigoPostal),
+      contacto: texto(d.contacto),
+      telefono: texto(d.telefono),
+      notas: texto(d.notas),
+    };
+    if (c.ficha.empresa) c.nombre = c.ficha.empresa;
+    if (c.ficha.rfc) c.rfc = c.ficha.rfc;
+    registrarActividad(c, fechaValida(d.createdAt));
+  }
+
   for (const doc of usersSnap.docs) {
     const d = doc.data();
     if (typeof d.email !== "string" || !d.email) continue;
     const c = obtener(d.email);
-    c.nombre = typeof d.name === "string" ? d.name : null;
+    if (!c.nombre) c.nombre = typeof d.name === "string" ? d.name : null;
     c.rol = typeof d.role === "string" ? d.role : null;
     c.activo = typeof d.active === "boolean" ? d.active : null;
     registrarActividad(c, fechaValida(d.createdAt));
