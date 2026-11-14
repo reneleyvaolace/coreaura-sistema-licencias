@@ -12,6 +12,9 @@ export default function ClientesPage() {
   const [expandido, setExpandido] = useState<string | null>(null);
   const [showModal, setShowModal] = useState(false);
   const [editingCliente, setEditingCliente] = useState<ClienteResumen | null>(null);
+  // Confirmación de eliminar dentro de la página (no el confirm() nativo,
+  // que la automatización del navegador no puede responder).
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     empresa: "",
     razonSocial: "",
@@ -120,7 +123,6 @@ export default function ClientesPage() {
 
   const handleDelete = async (c: ClienteResumen) => {
     if (!c.ficha) return;
-    if (!confirm(`¿Estás seguro de eliminar la ficha de ${c.nombre || c.email}?`)) return;
 
     try {
       const response = await fetch(`/api/clients/${c.ficha.id}`, {
@@ -137,6 +139,8 @@ export default function ClientesPage() {
     } catch (err) {
       console.error("Error:", err);
       alert("Error al eliminar el cliente");
+    } finally {
+      setConfirmandoEliminar(null);
     }
   };
 
@@ -286,13 +290,30 @@ export default function ClientesPage() {
                       >
                         Editar
                       </button>
-                      {c.ficha && (
+                      {c.ficha && confirmandoEliminar !== c.email && (
                         <button
-                          onClick={() => handleDelete(c)}
+                          onClick={() => setConfirmandoEliminar(c.email)}
                           className="text-red-600 hover:text-red-800 font-semibold"
                         >
                           Eliminar
                         </button>
+                      )}
+                      {c.ficha && confirmandoEliminar === c.email && (
+                        <span className="inline-flex items-center gap-2">
+                          <span className="text-sm text-gray-600">¿Seguro?</span>
+                          <button
+                            onClick={() => handleDelete(c)}
+                            className="text-red-700 hover:text-red-900 font-bold"
+                          >
+                            Sí, eliminar
+                          </button>
+                          <button
+                            onClick={() => setConfirmandoEliminar(null)}
+                            className="text-gray-600 hover:text-gray-800 font-semibold"
+                          >
+                            Cancelar
+                          </button>
+                        </span>
                       )}
                     </td>
                   </tr>
