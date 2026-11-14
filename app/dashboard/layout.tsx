@@ -23,6 +23,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
           <li><Link href="/dashboard/settings">Configuración</Link></li>
           <li><Link href="/dashboard/test-validation">Probar API</Link></li>
           <li><Link href="/dashboard/help">Ayuda</Link></li>
+          <li><Link href="/portal/mis-licencias">Mis licencias</Link></li>
         </ul>
         <div className="mt-auto pt-8">
           <span className="block text-gray-400 mb-3">{session?.user?.email}</span>
