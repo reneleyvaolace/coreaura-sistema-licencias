@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Mensaje from "@/components/Mensaje";
 
 interface Plan {
   id: string;
@@ -15,7 +16,9 @@ interface Plan {
 export default function PlansPage() {
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState<string | null>(null);
   const [editingPlan, setEditingPlan] = useState<Plan | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -38,11 +41,11 @@ export default function PlansPage() {
       if (response.ok) {
         setPlanes(data.plans);
       } else {
-        alert("Error al cargar planes");
+        setMensaje({ tipo: "error", texto: "Error al cargar planes" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar planes");
+      setMensaje({ tipo: "error", texto: "Error al cargar planes" });
     } finally {
       setLoading(false);
     }
@@ -94,20 +97,19 @@ export default function PlansPage() {
       });
 
       if (response.ok) {
-        alert(editingPlan ? "Plan actualizado exitosamente" : "Plan creado exitosamente");
+        setMensaje({ tipo: "exito", texto: editingPlan ? "Plan actualizado exitosamente" : "Plan creado exitosamente" });
         setShowModal(false);
         fetchPlans();
       } else {
-        alert("Error al guardar plan");
+        setMensaje({ tipo: "error", texto: "Error al guardar plan" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar plan");
+      setMensaje({ tipo: "error", texto: "Error al guardar plan" });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de eliminar este plan?")) return;
 
     try {
       const response = await fetch(`/api/plans/${id}`, {
@@ -115,15 +117,16 @@ export default function PlansPage() {
       });
 
       if (response.ok) {
-        alert("Plan eliminado");
+        setMensaje({ tipo: "exito", texto: "Plan eliminado" });
         fetchPlans();
       } else {
-        alert("Error al eliminar plan");
+        setMensaje({ tipo: "error", texto: "Error al eliminar plan" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar plan");
+      setMensaje({ tipo: "error", texto: "Error al eliminar plan" });
     }
+    setConfirmandoEliminar(null);
   };
 
   const toggleActive = async (planToToggle: Plan) => {
@@ -137,11 +140,11 @@ export default function PlansPage() {
       if (response.ok) {
         fetchPlans();
       } else {
-        alert("Error al cambiar estado");
+        setMensaje({ tipo: "error", texto: "Error al cambiar estado" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cambiar estado");
+      setMensaje({ tipo: "error", texto: "Error al cambiar estado" });
     }
   };
 
@@ -159,6 +162,7 @@ export default function PlansPage() {
   return (
     <section>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Gestión de Planes</h1>
+      <Mensaje mensaje={mensaje} onCerrar={() => setMensaje(null)} />
       <div className="mb-6">
         <button
           onClick={openCreateModal}
@@ -214,18 +218,40 @@ export default function PlansPage() {
               </div>
 
               <div className="flex gap-2 mt-4">
-                <button
-                  onClick={() => openEditModal(planItem)}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold text-sm"
-                >
-                  Editar
-                </button>
-                <button
-                  onClick={() => handleDelete(planItem.id)}
-                  className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-semibold text-sm"
-                >
-                  Eliminar
-                </button>
+                {confirmandoEliminar !== planItem.id ? (
+                  <>
+                    <button
+                      onClick={() => openEditModal(planItem)}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700 text-white py-2 rounded font-semibold text-sm"
+                    >
+                      Editar
+                    </button>
+                    <button
+                      onClick={() => setConfirmandoEliminar(planItem.id)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white py-2 rounded font-semibold text-sm"
+                    >
+                      Eliminar
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <span className="flex-1 text-sm text-gray-700 font-semibold self-center text-center">
+                      ¿Seguro?
+                    </span>
+                    <button
+                      onClick={() => handleDelete(planItem.id)}
+                      className="flex-1 bg-red-700 hover:bg-red-800 text-white py-2 rounded font-semibold text-sm"
+                    >
+                      Sí, eliminar
+                    </button>
+                    <button
+                      onClick={() => setConfirmandoEliminar(null)}
+                      className="flex-1 bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 rounded font-semibold text-sm"
+                    >
+                      Cancelar
+                    </button>
+                  </>
+                )}
               </div>
             </div>
           ))}

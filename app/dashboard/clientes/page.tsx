@@ -2,11 +2,13 @@
 "use client";
 
 import { useState, useEffect, Fragment } from "react";
+import Mensaje from "@/components/Mensaje";
 import type { ClienteResumen } from "@/lib/crm/clients";
 
 export default function ClientesPage() {
   const [clientes, setClientes] = useState<ClienteResumen[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busqueda, setBusqueda] = useState("");
   const [expandido, setExpandido] = useState<string | null>(null);
@@ -105,19 +107,20 @@ export default function ClientesPage() {
       const data = await response.json();
 
       if (response.ok) {
-        alert(
-          editingCliente?.ficha
+        setMensaje({
+          tipo: "exito",
+          texto: editingCliente?.ficha
             ? "Cliente actualizado exitosamente"
-            : "Cliente creado exitosamente"
-        );
+            : "Cliente creado exitosamente",
+        });
         setShowModal(false);
         fetchClientes();
       } else {
-        alert(data.error || "Error al guardar el cliente");
+        setMensaje({ tipo: "error", texto: data.error || "Error al guardar el cliente" });
       }
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al guardar el cliente");
+      setMensaje({ tipo: "error", texto: "Error al guardar el cliente" });
     }
   };
 
@@ -131,14 +134,14 @@ export default function ClientesPage() {
       const data = await response.json();
 
       if (response.ok) {
-        alert("Cliente eliminado");
+        setMensaje({ tipo: "exito", texto: "Cliente eliminado" });
         fetchClientes();
       } else {
-        alert(data.error || "Error al eliminar el cliente");
+        setMensaje({ tipo: "error", texto: data.error || "Error al eliminar el cliente" });
       }
     } catch (err) {
       console.error("Error:", err);
-      alert("Error al eliminar el cliente");
+      setMensaje({ tipo: "error", texto: "Error al eliminar el cliente" });
     } finally {
       setConfirmandoEliminar(null);
     }
@@ -169,6 +172,7 @@ export default function ClientesPage() {
   return (
     <section>
       <h1 className="text-3xl font-bold mb-2 text-gray-800">Clientes y empresas</h1>
+      <Mensaje mensaje={mensaje} onCerrar={() => setMensaje(null)} />
       <p className="text-gray-600 mb-6">
         {clientes.length} {clientes.length === 1 ? "cliente" : "clientes"} ·{" "}
         {(() => {

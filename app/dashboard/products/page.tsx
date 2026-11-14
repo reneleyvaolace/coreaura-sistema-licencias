@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Mensaje from "@/components/Mensaje";
 
 interface Product {
   id: string;
@@ -16,7 +17,9 @@ interface Product {
 export default function ProductsPage() {
   const [productos, setProductos] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState<string | null>(null);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
   const [formData, setFormData] = useState({
     name: "",
@@ -38,11 +41,11 @@ export default function ProductsPage() {
       if (response.ok) {
         setProductos(data.products);
       } else {
-        alert("Error al cargar productos");
+        setMensaje({ tipo: "error", texto: "Error al cargar productos" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar productos");
+      setMensaje({ tipo: "error", texto: "Error al cargar productos" });
     } finally {
       setLoading(false);
     }
@@ -82,20 +85,19 @@ export default function ProductsPage() {
       });
 
       if (response.ok) {
-        alert(editingProduct ? "Producto actualizado exitosamente" : "Producto creado exitosamente");
+        setMensaje({ tipo: "exito", texto: editingProduct ? "Producto actualizado exitosamente" : "Producto creado exitosamente" });
         setShowModal(false);
         fetchProducts();
       } else {
-        alert("Error al guardar producto");
+        setMensaje({ tipo: "error", texto: "Error al guardar producto" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar producto");
+      setMensaje({ tipo: "error", texto: "Error al guardar producto" });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de eliminar este producto?")) return;
 
     try {
       const response = await fetch(`/api/products/${id}`, {
@@ -103,15 +105,16 @@ export default function ProductsPage() {
       });
 
       if (response.ok) {
-        alert("Producto eliminado");
+        setMensaje({ tipo: "exito", texto: "Producto eliminado" });
         fetchProducts();
       } else {
-        alert("Error al eliminar producto");
+        setMensaje({ tipo: "error", texto: "Error al eliminar producto" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar producto");
+      setMensaje({ tipo: "error", texto: "Error al eliminar producto" });
     }
+    setConfirmandoEliminar(null);
   };
 
   const toggleActive = async (product: Product) => {
@@ -125,11 +128,11 @@ export default function ProductsPage() {
       if (response.ok) {
         fetchProducts();
       } else {
-        alert("Error al cambiar estado");
+        setMensaje({ tipo: "error", texto: "Error al cambiar estado" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cambiar estado");
+      setMensaje({ tipo: "error", texto: "Error al cambiar estado" });
     }
   };
 
@@ -140,6 +143,7 @@ export default function ProductsPage() {
   return (
     <section>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Gestión de Productos</h1>
+      <Mensaje mensaje={mensaje} onCerrar={() => setMensaje(null)} />
       <div className="mb-6">
         <button
           onClick={openCreateModal}
@@ -197,12 +201,31 @@ export default function ProductsPage() {
                   >
                     Editar
                   </button>
-                  <button
-                    onClick={() => handleDelete(prod.id)}
-                    className="text-red-600 hover:text-red-800 font-semibold"
-                  >
-                    Eliminar
-                  </button>
+                  {confirmandoEliminar !== prod.id && (
+                    <button
+                      onClick={() => setConfirmandoEliminar(prod.id)}
+                      className="text-red-600 hover:text-red-800 font-semibold"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                  {confirmandoEliminar === prod.id && (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-sm text-gray-600">¿Seguro?</span>
+                      <button
+                        onClick={() => handleDelete(prod.id)}
+                        className="text-red-700 hover:text-red-900 font-bold"
+                      >
+                        Sí, eliminar
+                      </button>
+                      <button
+                        onClick={() => setConfirmandoEliminar(null)}
+                        className="text-gray-600 hover:text-gray-800 font-semibold"
+                      >
+                        Cancelar
+                      </button>
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

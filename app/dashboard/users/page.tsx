@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Mensaje from "@/components/Mensaje";
 
 interface User {
   id: string;
@@ -16,7 +17,9 @@ interface User {
 export default function UsersPage() {
   const [usuarios, setUsuarios] = useState<User[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState<string | null>(null);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [formData, setFormData] = useState({
     email: "",
@@ -38,11 +41,11 @@ export default function UsersPage() {
       if (response.ok) {
         setUsuarios(data.users);
       } else {
-        alert("Error al cargar usuarios");
+        setMensaje({ tipo: "error", texto: "Error al cargar usuarios" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar usuarios");
+      setMensaje({ tipo: "error", texto: "Error al cargar usuarios" });
     } finally {
       setLoading(false);
     }
@@ -82,20 +85,19 @@ export default function UsersPage() {
       });
 
       if (response.ok) {
-        alert(editingUser ? "Usuario actualizado exitosamente" : "Usuario creado exitosamente");
+        setMensaje({ tipo: "exito", texto: editingUser ? "Usuario actualizado exitosamente" : "Usuario creado exitosamente" });
         setShowModal(false);
         fetchUsers();
       } else {
-        alert("Error al guardar usuario");
+        setMensaje({ tipo: "error", texto: "Error al guardar usuario" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar usuario");
+      setMensaje({ tipo: "error", texto: "Error al guardar usuario" });
     }
   };
 
   const handleDelete = async (id: string) => {
-    if (!confirm("¿Estás seguro de eliminar este usuario?")) return;
 
     try {
       const response = await fetch(`/api/users/${id}`, {
@@ -103,15 +105,16 @@ export default function UsersPage() {
       });
 
       if (response.ok) {
-        alert("Usuario eliminado");
+        setMensaje({ tipo: "exito", texto: "Usuario eliminado" });
         fetchUsers();
       } else {
-        alert("Error al eliminar usuario");
+        setMensaje({ tipo: "error", texto: "Error al eliminar usuario" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar usuario");
+      setMensaje({ tipo: "error", texto: "Error al eliminar usuario" });
     }
+    setConfirmandoEliminar(null);
   };
 
   const toggleActive = async (user: User) => {
@@ -125,11 +128,11 @@ export default function UsersPage() {
       if (response.ok) {
         fetchUsers();
       } else {
-        alert("Error al cambiar estado");
+        setMensaje({ tipo: "error", texto: "Error al cambiar estado" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cambiar estado");
+      setMensaje({ tipo: "error", texto: "Error al cambiar estado" });
     }
   };
 
@@ -140,6 +143,7 @@ export default function UsersPage() {
   return (
     <section>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Gestión de Usuarios</h1>
+      <Mensaje mensaje={mensaje} onCerrar={() => setMensaje(null)} />
       <div className="mb-6">
         <button
           onClick={openCreateModal}
@@ -203,12 +207,31 @@ export default function UsersPage() {
                   >
                     Editar
                   </button>
-                  <button
-                    onClick={() => handleDelete(user.id)}
-                    className="text-red-600 hover:text-red-800 font-semibold"
-                  >
-                    Eliminar
-                  </button>
+                  {confirmandoEliminar !== user.id && (
+                    <button
+                      onClick={() => setConfirmandoEliminar(user.id)}
+                      className="text-red-600 hover:text-red-800 font-semibold"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                  {confirmandoEliminar === user.id && (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-sm text-gray-600">¿Seguro?</span>
+                      <button
+                        onClick={() => handleDelete(user.id)}
+                        className="text-red-700 hover:text-red-900 font-bold"
+                      >
+                        Sí, eliminar
+                      </button>
+                      <button
+                        onClick={() => setConfirmandoEliminar(null)}
+                        className="text-gray-600 hover:text-gray-800 font-semibold"
+                      >
+                        Cancelar
+                      </button>
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

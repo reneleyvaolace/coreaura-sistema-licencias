@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Mensaje from "@/components/Mensaje";
 
 interface License {
   id: string;
@@ -50,7 +51,9 @@ export default function LicensesPage() {
   const [licencias, setLicencias] = useState<License[]>([]);
   const [planes, setPlanes] = useState<Plan[]>([]);
   const [loading, setLoading] = useState(true);
+  const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [showModal, setShowModal] = useState(false);
+  const [confirmandoEliminar, setConfirmandoEliminar] = useState<string | null>(null);
   const [editingLicense, setEditingLicense] = useState<License | null>(null);
   const [newLicense, setNewLicense] = useState({
     producto: "",
@@ -73,11 +76,11 @@ export default function LicensesPage() {
       if (response.ok) {
         setLicencias(data.licenses);
       } else {
-        alert("Error al cargar licencias");
+        setMensaje({ tipo: "error", texto: "Error al cargar licencias" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar licencias");
+      setMensaje({ tipo: "error", texto: "Error al cargar licencias" });
     } finally {
       setLoading(false);
     }
@@ -129,21 +132,20 @@ export default function LicensesPage() {
       });
 
       if (response.ok) {
-        alert(editingLicense ? "Licencia actualizada exitosamente" : "Licencia creada exitosamente");
+        setMensaje({ tipo: "exito", texto: editingLicense ? "Licencia actualizada exitosamente" : "Licencia creada exitosamente" });
         setShowModal(false);
         setNewLicense({ producto: "", usuario: "", estado: "activa", planId: "" });
         fetchLicenses();
       } else {
-        alert("Error al guardar licencia");
+        setMensaje({ tipo: "error", texto: "Error al guardar licencia" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar licencia");
+      setMensaje({ tipo: "error", texto: "Error al guardar licencia" });
     }
   };
 
   const handleDeleteLicense = async (id: string) => {
-    if (!confirm("¿Estás seguro de eliminar esta licencia?")) return;
 
     try {
       const response = await fetch(`/api/licenses/${id}`, {
@@ -151,15 +153,16 @@ export default function LicensesPage() {
       });
 
       if (response.ok) {
-        alert("Licencia eliminada");
+        setMensaje({ tipo: "exito", texto: "Licencia eliminada" });
         fetchLicenses();
       } else {
-        alert("Error al eliminar licencia");
+        setMensaje({ tipo: "error", texto: "Error al eliminar licencia" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al eliminar licencia");
+      setMensaje({ tipo: "error", texto: "Error al eliminar licencia" });
     }
+    setConfirmandoEliminar(null);
   };
 
   if (loading) {
@@ -169,6 +172,7 @@ export default function LicensesPage() {
   return (
     <section>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Gestión de Licencias</h1>
+      <Mensaje mensaje={mensaje} onCerrar={() => setMensaje(null)} />
       <div className="mb-6">
         <button
           onClick={openCreateModal}
@@ -237,12 +241,31 @@ export default function LicensesPage() {
                   >
                     Editar
                   </button>
-                  <button
-                    onClick={() => handleDeleteLicense(lic.id)}
-                    className="text-red-600 hover:text-red-800 font-semibold"
-                  >
-                    Eliminar
-                  </button>
+                  {confirmandoEliminar !== lic.id && (
+                    <button
+                      onClick={() => setConfirmandoEliminar(lic.id)}
+                      className="text-red-600 hover:text-red-800 font-semibold"
+                    >
+                      Eliminar
+                    </button>
+                  )}
+                  {confirmandoEliminar === lic.id && (
+                    <span className="inline-flex items-center gap-2">
+                      <span className="text-sm text-gray-600">¿Seguro?</span>
+                      <button
+                        onClick={() => handleDeleteLicense(lic.id)}
+                        className="text-red-700 hover:text-red-900 font-bold"
+                      >
+                        Sí, eliminar
+                      </button>
+                      <button
+                        onClick={() => setConfirmandoEliminar(null)}
+                        className="text-gray-600 hover:text-gray-800 font-semibold"
+                      >
+                        Cancelar
+                      </button>
+                    </span>
+                  )}
                 </td>
               </tr>
             ))}

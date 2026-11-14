@@ -2,6 +2,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Mensaje from "@/components/Mensaje";
 
 interface Settings {
   siteName: string;
@@ -20,6 +21,7 @@ export default function SettingsPage() {
     maintenanceMode: false,
   });
   const [loading, setLoading] = useState(true);
+  const [mensaje, setMensaje] = useState<{ tipo: "exito" | "error"; texto: string } | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -35,11 +37,11 @@ export default function SettingsPage() {
       if (response.ok) {
         setSettings(data.settings);
       } else {
-        alert("Error al cargar configuración");
+        setMensaje({ tipo: "error", texto: "Error al cargar configuración" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al cargar configuración");
+      setMensaje({ tipo: "error", texto: "Error al cargar configuración" });
     } finally {
       setLoading(false);
     }
@@ -55,13 +57,13 @@ export default function SettingsPage() {
       });
 
       if (response.ok) {
-        alert("Configuración guardada correctamente");
+        setMensaje({ tipo: "exito", texto: "Configuración guardada correctamente" });
       } else {
-        alert("Error al guardar configuración");
+        setMensaje({ tipo: "error", texto: "Error al guardar configuración" });
       }
     } catch (error) {
       console.error("Error:", error);
-      alert("Error al guardar configuración");
+      setMensaje({ tipo: "error", texto: "Error al guardar configuración" });
     } finally {
       setSaving(false);
     }
@@ -74,6 +76,7 @@ export default function SettingsPage() {
   return (
     <section>
       <h1 className="text-3xl font-bold mb-6 text-gray-800">Configuración del Sistema</h1>
+      <Mensaje mensaje={mensaje} onCerrar={() => setMensaje(null)} />
       
       <div className="bg-white border border-gray-300 rounded shadow-sm p-6 mb-6">
         <h2 className="text-xl font-semibold text-gray-800 mb-4">Información General</h2>
