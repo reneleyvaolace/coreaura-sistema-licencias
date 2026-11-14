@@ -73,7 +73,7 @@ export default function MisLicenciasPage() {
     <div>
       <h1 className="text-2xl font-bold text-gray-900">Mis licencias</h1>
       <p className="mt-1 text-sm text-gray-500">
-        Estas son las licencias registradas con tu correo.
+        Estas son las licencias que tienes contratadas.
       </p>
 
       {needsLogin && (
@@ -148,6 +148,12 @@ export default function MisLicenciasPage() {
                     <dd>{fmtFecha(lic.fechaExpiracion)}</dd>
                   </div>
                 </dl>
+                <a
+                  href={`/portal/mis-licencias/${lic.id}`}
+                  className="mt-4 inline-block text-sm font-semibold text-gray-900 underline"
+                >
+                  Ver detalle →
+                </a>
               </section>
             );
           })}
